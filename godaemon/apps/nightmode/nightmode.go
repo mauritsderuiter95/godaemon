@@ -11,4 +11,5 @@ type Nightmode struct {
 
 func (n Nightmode) Initialize() {
 	entity.Get("light.woonkamer").TurnOn()
+	entity.Get("light.woonkamer").TurnOff()
 }
