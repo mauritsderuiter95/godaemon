@@ -17,12 +17,12 @@ import (
 )
 
 type HomeAssistant struct {
-	host    string
-	token   string
-	wsconn  *websocket.Conn
-	events  chan Event
-	done    chan struct{}
-	eventId int
+	host      string
+	token     string
+	wsconn    *websocket.Conn
+	events    chan Event
+	done      chan struct{}
+	Callbacks map[string][]func(Event)
 }
 
 var once sync.Once
@@ -126,11 +126,11 @@ func GetInstance() HomeAssistant {
 		}
 
 		ha = HomeAssistant{
-			host:    host,
-			token:   token,
-			wsconn:  connection,
-			done:    make(chan struct{}),
-			eventId: 2,
+			host:      host,
+			token:     token,
+			wsconn:    connection,
+			done:      make(chan struct{}),
+			Callbacks: map[string][]func(Event){},
 		}
 
 		ha.events = ha.getEventStream()
@@ -139,10 +139,14 @@ func GetInstance() HomeAssistant {
 	return ha
 }
 
-type ServiceData map[string]string
-
-type Message struct {
-	EntityId string `json:"entity_id"`
+func (ha *HomeAssistant) HandleEvents() {
+	for m := range ha.events {
+		if val, ok := ha.Callbacks[m.Event.Data.EntityId]; ok {
+			for _, f := range val {
+				go f(m)
+			}
+		}
+	}
 }
 
 func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]string) error {

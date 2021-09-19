@@ -15,6 +15,8 @@ func main() {
 		app.Initialize()
 	}
 
+	go inst.HandleEvents()
+
 	if err := inst.CloseConnection(); err != nil {
 		log.Fatalln(err)
 	}

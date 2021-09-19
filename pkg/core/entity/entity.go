@@ -13,6 +13,12 @@ func Get(name string) Entity {
 	return Entity{Name: name}
 }
 
+func (e Entity) OnChange(f func(event core.Event)) {
+	ha := core.GetInstance()
+
+	ha.Callbacks[e.Name] = append(ha.Callbacks[e.Name], f)
+}
+
 func (e Entity) TurnOn() {
 	ha := core.GetInstance()
 
