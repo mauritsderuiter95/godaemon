@@ -16,7 +16,16 @@ func Get(name string) Entity {
 func (e Entity) TurnOn() {
 	ha := core.GetInstance()
 
-	if err := ha.SendMessage("call_service", "light", "turn_on", "", "", e.Name); err != nil {
+	if err := ha.CallService("light", "turn_on", e.Name, nil); err != nil {
+		logger := log.Default()
+		logger.Println(err)
+	}
+}
+
+func (e Entity) TurnOff() {
+	ha := core.GetInstance()
+
+	if err := ha.CallService("light", "turn_off", e.Name, nil); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
