@@ -1,10 +1,13 @@
 package core
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -14,16 +17,18 @@ import (
 )
 
 type HomeAssistant struct {
-	conn *websocket.Conn
-	events chan byte
-	done chan struct{}
+	host    string
+	token   string
+	wsconn  *websocket.Conn
+	events  chan Event
+	done    chan struct{}
+	eventId int
 }
 
 var once sync.Once
 var ha HomeAssistant
 
-func connect() (*websocket.Conn, error) {
-	host := os.Getenv("HA_HOST")
+func connect(host string) (*websocket.Conn, error) {
 	u := url.URL{Scheme: "wss", Host: host, Path: "/api/websocket"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -32,14 +37,13 @@ func connect() (*websocket.Conn, error) {
 	return c, nil
 }
 
-func authenticate(c *websocket.Conn) error {
+func authenticate(c *websocket.Conn, token string) error {
 	_, message, err := c.ReadMessage()
 	if err != nil {
 		return err
 	}
 
 	if strings.Contains(string(message), "auth_required") {
-		token := os.Getenv("HA_TOKEN")
 		err := c.WriteMessage(1, []byte(fmt.Sprintf("{\"type\":\"auth\",\"access_token\":\"%s\"}", token)))
 		if err != nil {
 			return err
@@ -55,17 +59,24 @@ func subscribeToEvents(c *websocket.Conn) error {
 	return c.WriteMessage(1, []byte("{\"id\":1,\"type\":\"subscribe_events\"}"))
 }
 
-func(ha *HomeAssistant) getEventStream() chan byte {
-	stream := make(chan byte, 1000)
+func (ha *HomeAssistant) getEventStream() chan Event {
+	stream := make(chan Event, 1000)
 	go func() {
 		defer close(ha.done)
 		for {
-			_, message, err := ha.conn.ReadMessage()
+			_, message, err := ha.wsconn.ReadMessage()
 			if err != nil {
 				fmt.Println("read:", err)
 				return
 			}
-			fmt.Printf("recv: %s\n", message)
+
+			e := Event{}
+			if err := json.Unmarshal(message, &e); err != nil {
+				fmt.Println("parsing error:", err)
+				return
+			}
+
+			stream <- e
 		}
 	}()
 	return stream
@@ -85,7 +96,7 @@ func (ha *HomeAssistant) CloseConnection() error {
 
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
-			err := ha.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			err := ha.wsconn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				return err
 			}
@@ -100,12 +111,13 @@ func (ha *HomeAssistant) CloseConnection() error {
 
 func GetInstance() HomeAssistant {
 	once.Do(func() {
-		connection, err := connect()
+		host := os.Getenv("HA_HOST")
+		connection, err := connect(host)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
-		if err := authenticate(connection); err != nil {
+		token := os.Getenv("HA_TOKEN")
+		if err := authenticate(connection, token); err != nil {
 			log.Fatalln(err)
 		}
 
@@ -114,8 +126,11 @@ func GetInstance() HomeAssistant {
 		}
 
 		ha = HomeAssistant{
-			conn: connection,
-			done: make(chan struct{}),
+			host:    host,
+			token:   token,
+			wsconn:  connection,
+			done:    make(chan struct{}),
+			eventId: 2,
 		}
 
 		ha.events = ha.getEventStream()
@@ -124,46 +139,42 @@ func GetInstance() HomeAssistant {
 	return ha
 }
 
-type Target struct {
+type ServiceData map[string]string
+
+type Message struct {
 	EntityId string `json:"entity_id"`
 }
 
-type Message struct {
-	Id int `json:"id"`
-	Type string `json:"type"`
-	Domain string `json:"domain"`
-	Service string `json:"service"`
-	ServiceData map[string]string `json:"service_data"`
-	Target Target `json:"target"`
-}
-
-func (ha HomeAssistant) SendMessage(t, domain, service, colorName, brightness, entityId string) error {
-	serviceData := map[string]string{}
-	if colorName != "" {
-		serviceData["color_name"] = colorName
+func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]string) error {
+	if attrs == nil {
+		attrs = map[string]string{}
 	}
-	if brightness != "" {
-		serviceData["brightness"] = brightness
-	}
+	attrs["entity_id"] = entityId
 
-	m := Message{
-		Id:          2,
-		Type:        t,
-		Domain:		 domain,
-		Service:     service,
-		ServiceData: serviceData,
-		Target:      Target{
-			EntityId: entityId,
-		},
-	}
-
-	mBytes, err := json.Marshal(m)
+	mBytes, err := json.Marshal(attrs)
 	if err != nil {
 		return err
 	}
 
-	if err := ha.conn.WriteMessage(1, mBytes); err != nil {
+	client := http.Client{}
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/api/services/%s/%s", ha.host, domain, service), bytes.NewBuffer(mBytes))
+	if err != nil {
 		return err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", ha.token))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.Status != "200 OK" {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(body))
 	}
 
 	return nil

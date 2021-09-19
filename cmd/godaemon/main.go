@@ -7,13 +7,14 @@ import (
 )
 
 func main() {
+	inst := core.GetInstance()
+
 	userApps := apps.Register()
 
 	for _, app := range userApps {
 		app.Initialize()
 	}
 
-	inst := core.GetInstance()
 	if err := inst.CloseConnection(); err != nil {
 		log.Fatalln(err)
 	}
