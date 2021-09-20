@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
 	"github.com/mauritsderuiter95/godaemon/pkg/core/entity"
+	"github.com/mauritsderuiter95/godaemon/pkg/core/event"
 )
 
 type Nightmode struct {
@@ -11,16 +12,10 @@ type Nightmode struct {
 }
 
 func (n Nightmode) Initialize() {
-	entity.Get("light.woonkamer").TurnOn()
-	entity.Get("light.woonkamer").TurnOff()
-	entity.Get("light.woonkamer").OnChange(n.SyncKitchen)
+	event.Get("deconz_event").OnChange("switch_woonkamer", n.ToggleKitchen)
 }
 
-func (n Nightmode) SyncKitchen(event core.Event) {
-	fmt.Println(event.Event.Data.NewState.State)
-	if event.Event.Data.NewState.State == "on" {
-		entity.Get("light.kitchen").TurnOn()
-	} else {
-		entity.Get("light.kitchen").TurnOff()
-	}
+func (n Nightmode) ToggleKitchen(event core.HaEvent) {
+	fmt.Println(event)
+	entity.Get("light.kitchen").Toggle()
 }

@@ -2,12 +2,13 @@ package core
 
 import "time"
 
-type Event struct {
+type HaEvent struct {
 	Id    int    `json:"id"`
 	Type  string `json:"type"`
 	Event struct {
 		EventType string `json:"event_type"`
 		Data      struct {
+			Id       string `json:"id"`
 			EntityId string `json:"entity_id"`
 			OldState struct {
 				EntityId   string `json:"entity_id"`

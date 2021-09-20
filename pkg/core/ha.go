@@ -20,9 +20,9 @@ type HomeAssistant struct {
 	host      string
 	token     string
 	wsconn    *websocket.Conn
-	events    chan Event
+	events    chan HaEvent
 	done      chan struct{}
-	Callbacks map[string][]func(Event)
+	Callbacks map[string][]func(HaEvent)
 }
 
 var once sync.Once
@@ -59,8 +59,8 @@ func subscribeToEvents(c *websocket.Conn) error {
 	return c.WriteMessage(1, []byte("{\"id\":1,\"type\":\"subscribe_events\"}"))
 }
 
-func (ha *HomeAssistant) getEventStream() chan Event {
-	stream := make(chan Event, 1000)
+func (ha *HomeAssistant) getEventStream() chan HaEvent {
+	stream := make(chan HaEvent, 1000)
 	go func() {
 		defer close(ha.done)
 		for {
@@ -70,13 +70,14 @@ func (ha *HomeAssistant) getEventStream() chan Event {
 				return
 			}
 
-			e := Event{}
+			e := HaEvent{}
 			if err := json.Unmarshal(message, &e); err != nil {
 				fmt.Println("parsing error:", err)
 				return
 			}
 
 			stream <- e
+			//fmt.Printf("%v\n", e)
 		}
 	}()
 	return stream
@@ -130,7 +131,7 @@ func GetInstance() HomeAssistant {
 			token:     token,
 			wsconn:    connection,
 			done:      make(chan struct{}),
-			Callbacks: map[string][]func(Event){},
+			Callbacks: map[string][]func(HaEvent){},
 		}
 
 		ha.events = ha.getEventStream()
@@ -141,7 +142,11 @@ func GetInstance() HomeAssistant {
 
 func (ha *HomeAssistant) HandleEvents() {
 	for m := range ha.events {
-		if val, ok := ha.Callbacks[m.Event.Data.EntityId]; ok {
+		id := m.Event.Data.EntityId
+		if id == "" {
+			id = m.Event.Data.Id
+		}
+		if val, ok := ha.Callbacks[id]; ok {
 			for _, f := range val {
 				go f(m)
 			}
