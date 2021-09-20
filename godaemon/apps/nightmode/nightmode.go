@@ -1,7 +1,6 @@
 package nightmode
 
 import (
-	"fmt"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
 	"github.com/mauritsderuiter95/godaemon/pkg/core/entity"
 	"github.com/mauritsderuiter95/godaemon/pkg/core/event"
@@ -16,6 +15,5 @@ func (n Nightmode) Initialize() {
 }
 
 func (n Nightmode) ToggleKitchen(event core.HaEvent) {
-	fmt.Println(event)
 	entity.Get("light.kitchen").Toggle()
 }
