@@ -112,12 +112,12 @@ func (ha *HomeAssistant) CloseConnection() error {
 
 func GetInstance() HomeAssistant {
 	once.Do(func() {
-		host := os.Getenv("HA_HOST")
+		host := os.Getenv("HASSIO")
 		connection, err := connect(host)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		token := os.Getenv("HA_TOKEN")
+		token := os.Getenv("HASSIO_TOKEN")
 		if err := authenticate(connection, token); err != nil {
 			log.Fatalln(err)
 		}
