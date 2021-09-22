@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -19,6 +18,9 @@ import (
 type HomeAssistant struct {
 	host      string
 	token     string
+	sToken    string
+	wsURL     string
+	apiURL    string
 	wsconn    *websocket.Conn
 	events    chan HaEvent
 	done      chan struct{}
@@ -28,10 +30,10 @@ type HomeAssistant struct {
 var once sync.Once
 var ha HomeAssistant
 
-func connect(host string) (*websocket.Conn, error) {
-	u := url.URL{Scheme: "wss", Host: host, Path: "/api/websocket"}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+func connect(wsURL string) (*websocket.Conn, error) {
+	c, res, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
+		fmt.Println(res)
 		return nil, err
 	}
 	return c, nil
@@ -112,12 +114,24 @@ func (ha *HomeAssistant) CloseConnection() error {
 
 func GetInstance() HomeAssistant {
 	once.Do(func() {
-		host := os.Getenv("HASSIO")
+		host := os.Getenv("HA_HOST")
+		token := os.Getenv("HA_TOKEN")
+		sToken := os.Getenv("SUPERVISOR_TOKEN")
+
+		wsURL := fmt.Sprintf("wss://%s/api/websocket", host)
+		apiURL := fmt.Sprintf("https://%s/api", host)
+
+		if sToken != "" {
+			host = "supervisor"
+			token = sToken
+
+			wsURL = fmt.Sprintf("ws://supervisor/core/websocket")
+			apiURL = "http://supervisor/core/api"
+		}
 		connection, err := connect(host)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		token := os.Getenv("HASSIO_TOKEN")
 		if err := authenticate(connection, token); err != nil {
 			log.Fatalln(err)
 		}
@@ -129,6 +143,9 @@ func GetInstance() HomeAssistant {
 		ha = HomeAssistant{
 			host:      host,
 			token:     token,
+			sToken:    sToken,
+			wsURL:     wsURL,
+			apiURL:    apiURL,
 			wsconn:    connection,
 			done:      make(chan struct{}),
 			Callbacks: map[string][]func(HaEvent){},
@@ -166,7 +183,8 @@ func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[
 	}
 
 	client := http.Client{}
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/api/services/%s/%s", ha.host, domain, service), bytes.NewBuffer(mBytes))
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/services/%s/%s", ha.apiURL, domain, service), bytes.NewBuffer(mBytes))
 	if err != nil {
 		return err
 	}
