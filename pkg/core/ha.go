@@ -22,9 +22,9 @@ type HomeAssistant struct {
 	wsURL     string
 	apiURL    string
 	wsconn    *websocket.Conn
-	events    chan HaEvent
+	events    chan Event
 	done      chan struct{}
-	Callbacks map[string][]func(HaEvent)
+	Callbacks map[string][]func(Event)
 }
 
 var once sync.Once
@@ -61,8 +61,8 @@ func subscribeToEvents(c *websocket.Conn) error {
 	return c.WriteMessage(1, []byte("{\"id\":1,\"type\":\"subscribe_events\"}"))
 }
 
-func (ha *HomeAssistant) getEventStream() chan HaEvent {
-	stream := make(chan HaEvent, 1000)
+func (ha *HomeAssistant) getEventStream() chan Event {
+	stream := make(chan Event, 1000)
 	go func() {
 		defer close(ha.done)
 		for {
@@ -72,7 +72,7 @@ func (ha *HomeAssistant) getEventStream() chan HaEvent {
 				return
 			}
 
-			e := HaEvent{}
+			e := Event{}
 			if err := json.Unmarshal(message, &e); err != nil {
 				fmt.Println("parsing error:", err)
 				return
@@ -128,7 +128,7 @@ func GetInstance() HomeAssistant {
 			wsURL = fmt.Sprintf("ws://supervisor/core/websocket")
 			apiURL = "http://supervisor/core/api"
 		}
-		connection, err := connect(host)
+		connection, err := connect(wsURL)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -148,7 +148,7 @@ func GetInstance() HomeAssistant {
 			apiURL:    apiURL,
 			wsconn:    connection,
 			done:      make(chan struct{}),
-			Callbacks: map[string][]func(HaEvent){},
+			Callbacks: map[string][]func(Event){},
 		}
 
 		ha.events = ha.getEventStream()
@@ -169,6 +169,42 @@ func (ha *HomeAssistant) HandleEvents() {
 			}
 		}
 	}
+}
+
+func (ha HomeAssistant) GetState(entity string) State {
+	client := http.Client{}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/states/%s", ha.apiURL, entity), nil)
+	if err != nil {
+		fmt.Println(err)
+		return State{}
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", ha.token))
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return State{}
+	}
+
+	body, err := io.ReadAll(res.Body)
+
+	if res.Status != "200 OK" {
+		if err != nil {
+			fmt.Println(err)
+			return State{}
+		}
+	}
+
+	s := State{}
+
+	if err := json.Unmarshal(body, &s); err != nil {
+		fmt.Println(err)
+		return State{}
+	}
+
+	return s
 }
 
 func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]string) error {

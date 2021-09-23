@@ -2,7 +2,7 @@ package core
 
 import "time"
 
-type HaEvent struct {
+type Event struct {
 	Id    int    `json:"id"`
 	Type  string `json:"type"`
 	Event struct {

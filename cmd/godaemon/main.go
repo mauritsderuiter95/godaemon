@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/mauritsderuiter95/godaemon/godaemon/apps"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
-	"github.com/mauritsderuiter95/godaemon/pkg/core/schedule"
 	"log"
 )
 
@@ -17,7 +16,7 @@ func main() {
 	}
 
 	go inst.HandleEvents()
-	schedule.StartScheduler()
+	core.StartScheduler()
 
 	if err := inst.CloseConnection(); err != nil {
 		log.Fatalln(err)

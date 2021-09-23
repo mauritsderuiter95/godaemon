@@ -1,10 +1,8 @@
 package nightmode
 
 import (
+	"fmt"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
-	"github.com/mauritsderuiter95/godaemon/pkg/core/entity"
-	"github.com/mauritsderuiter95/godaemon/pkg/core/event"
-	"github.com/mauritsderuiter95/godaemon/pkg/core/schedule"
 )
 
 type Nightmode struct {
@@ -12,14 +10,14 @@ type Nightmode struct {
 }
 
 func (n Nightmode) Initialize() {
-	event.Get("deconz_event").OnChange("switch_woonkamer", n.ToggleKitchen)
-	schedule.RunDaily(22, 22, n.TurnOffLivingRoom)
+	fmt.Printf("%#v\n", core.State{EntityId: "light.woonkamer"}.Get())
+	core.RunDaily(22, 22, n.TurnOffLivingRoom)
 }
 
 func (Nightmode) TurnOffLivingRoom() {
-	entity.Get("light.woonkamer").TurnOff()
+	core.Entity{Name: "light.woonkamer"}.TurnOff()
 }
 
-func (n Nightmode) ToggleKitchen(event core.HaEvent) {
-	entity.Get("light.kitchen").Toggle()
+func (n Nightmode) ToggleKitchen(event core.Event) {
+	core.Entity{Name: "light.kitchen"}.Toggle()
 }

@@ -1,7 +1,6 @@
-package entity
+package core
 
 import (
-	"github.com/mauritsderuiter95/godaemon/pkg/core"
 	"log"
 )
 
@@ -9,18 +8,14 @@ type Entity struct {
 	Name string
 }
 
-func Get(name string) Entity {
-	return Entity{Name: name}
-}
-
-func (e Entity) OnChange(f func(event core.HaEvent)) {
-	ha := core.GetInstance()
+func (e Entity) OnChange(f func(event Event)) {
+	ha := GetInstance()
 
 	ha.Callbacks[e.Name] = append(ha.Callbacks[e.Name], f)
 }
 
 func (e Entity) TurnOn() {
-	ha := core.GetInstance()
+	ha := GetInstance()
 
 	if err := ha.CallService("light", "turn_on", e.Name, nil); err != nil {
 		logger := log.Default()
@@ -29,7 +24,7 @@ func (e Entity) TurnOn() {
 }
 
 func (e Entity) TurnOff() {
-	ha := core.GetInstance()
+	ha := GetInstance()
 
 	if err := ha.CallService("light", "turn_off", e.Name, nil); err != nil {
 		logger := log.Default()
@@ -38,7 +33,7 @@ func (e Entity) TurnOff() {
 }
 
 func (e Entity) Toggle() {
-	ha := core.GetInstance()
+	ha := GetInstance()
 
 	if err := ha.CallService("light", "toggle", e.Name, nil); err != nil {
 		logger := log.Default()
