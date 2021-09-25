@@ -22,7 +22,7 @@ func (s State) OnChange(f func(event Event)) {
 	ha := GetInstance()
 
 	ha.Callbacks[s.EntityId] = append(ha.Callbacks[s.EntityId], func(event Event) {
-		if event.Event.EventType == s.EntityId {
+		if event.EventType == s.EntityId {
 			f(event)
 		}
 	})

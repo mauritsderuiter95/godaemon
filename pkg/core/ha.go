@@ -22,9 +22,15 @@ type HomeAssistant struct {
 	wsURL     string
 	apiURL    string
 	wsconn    *websocket.Conn
-	events    chan Event
+	events    chan HaEvent
 	done      chan struct{}
 	Callbacks map[string][]func(Event)
+}
+
+type HaEvent struct {
+	Id    int    `json:"id"`
+	Type  string `json:"type"`
+	Event Event  `json:"event"`
 }
 
 var once sync.Once
@@ -61,8 +67,8 @@ func subscribeToEvents(c *websocket.Conn) error {
 	return c.WriteMessage(1, []byte("{\"id\":1,\"type\":\"subscribe_events\"}"))
 }
 
-func (ha *HomeAssistant) getEventStream() chan Event {
-	stream := make(chan Event, 1000)
+func (ha *HomeAssistant) getEventStream() chan HaEvent {
+	stream := make(chan HaEvent, 1000)
 	go func() {
 		defer close(ha.done)
 		for {
@@ -72,7 +78,7 @@ func (ha *HomeAssistant) getEventStream() chan Event {
 				return
 			}
 
-			e := Event{}
+			e := HaEvent{}
 			if err := json.Unmarshal(message, &e); err != nil {
 				fmt.Println("parsing error:", err)
 				return
@@ -165,7 +171,7 @@ func (ha *HomeAssistant) HandleEvents() {
 		}
 		if val, ok := ha.Callbacks[id]; ok {
 			for _, f := range val {
-				go f(m)
+				go f(m.Event)
 			}
 		}
 	}
