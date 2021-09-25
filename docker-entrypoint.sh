@@ -1,7 +1,12 @@
 #!/bin/sh
 
-set -e
+rm -rf /config/godaemon/cmd
+rm -rf /config/godaemon/pkg
+mv /data/app/src/* /config/godaemon
 
-go build -o ./godaemon-app ./cmd/godaemon/.
+cd /config/godaemon
 
-./godaemon-app
+while true; do
+  go build -o ./godaemon-app ./cmd/godaemon/.
+  ./godaemon-app
+done

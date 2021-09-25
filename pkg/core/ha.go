@@ -94,11 +94,18 @@ func (ha *HomeAssistant) getEventStream() chan HaEvent {
 func (ha *HomeAssistant) CloseConnection() error {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
+	signal.Notify(interrupt, os.Kill)
 
 	for {
 		select {
 		case <-ha.done:
-			fmt.Println("done")
+			fmt.Println("rebuild")
+
+			err := ha.wsconn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				return err
+			}
+			time.Sleep(time.Second)
 			return nil
 		case <-interrupt:
 			fmt.Println("interrupt")

@@ -18,6 +18,8 @@ func main() {
 	go inst.HandleEvents()
 	core.StartScheduler()
 
+	go core.QuitOnFilechange(inst)
+
 	if err := inst.CloseConnection(); err != nil {
 		log.Fatalln(err)
 	}
