@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/mauritsderuiter95/godaemon/godaemon/apps"
+	"github.com/mauritsderuiter95/godaemon/apps"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
 	"log"
 )

@@ -12,6 +12,7 @@ type Nightmode struct {
 func (n Nightmode) Initialize() {
 	fmt.Printf("%#v\n", core.State{EntityId: "light.woonkamer"}.Get())
 	core.RunDaily(22, 22, n.TurnOffLivingRoom)
+	core.Event{EventType: "deconz_event"}.On("switch_woonkamer", n.ToggleKitchen)
 }
 
 func (Nightmode) TurnOffLivingRoom() {

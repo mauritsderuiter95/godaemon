@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/mauritsderuiter95/godaemon/godaemon/apps/nightmode"
+	"github.com/mauritsderuiter95/godaemon/apps/nightmode"
 	"github.com/mauritsderuiter95/godaemon/pkg/core"
 )
 
