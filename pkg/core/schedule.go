@@ -24,3 +24,11 @@ func RunDaily(hour, minute int64, f func()) {
 		fmt.Println(err)
 	}
 }
+
+func RunHourly(minute int64, f func()) {
+	sMinute := strconv.FormatInt(minute, 10)
+
+	if _, err := s.Cron(fmt.Sprintf("%s * * * *", sMinute)).Do(f); err != nil {
+		fmt.Println(err)
+	}
+}

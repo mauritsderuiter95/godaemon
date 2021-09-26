@@ -14,10 +14,10 @@ func (e Entity) OnChange(f func(event Event)) {
 	ha.Callbacks[e.Name] = append(ha.Callbacks[e.Name], f)
 }
 
-func (e Entity) TurnOn() {
+func (e Entity) TurnOn(attrs map[string]string) {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "turn_on", e.Name, nil); err != nil {
+	if err := ha.CallService("light", "turn_on", e.Name, attrs); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
