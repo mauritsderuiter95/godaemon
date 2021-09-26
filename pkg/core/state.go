@@ -12,7 +12,7 @@ type State struct {
 	State       string                 `json:"state"`
 }
 
-func (s State) Get() State {
+func (s State) Get() (State, error) {
 	ha := GetInstance()
 
 	return ha.GetState(s.EntityId)

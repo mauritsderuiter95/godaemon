@@ -184,13 +184,13 @@ func (ha *HomeAssistant) HandleEvents() {
 	}
 }
 
-func (ha HomeAssistant) GetState(entity string) State {
+func (ha HomeAssistant) GetState(entity string) (State, error) {
 	client := http.Client{}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/states/%s", ha.apiURL, entity), nil)
 	if err != nil {
 		fmt.Println(err)
-		return State{}
+		return State{}, err
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", ha.token))
@@ -198,26 +198,26 @@ func (ha HomeAssistant) GetState(entity string) State {
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		return State{}
+		return State{}, err
 	}
 
 	body, err := io.ReadAll(res.Body)
 
 	if res.Status != "200 OK" {
-		if err != nil {
-			fmt.Println(err)
-			return State{}
+		if res.Status == "404 Not Found" {
+			err = fmt.Errorf("error: %s does not exist", entity)
 		}
+		return State{}, err
 	}
 
 	s := State{}
 
 	if err := json.Unmarshal(body, &s); err != nil {
 		fmt.Println(err)
-		return State{}
+		return State{}, err
 	}
 
-	return s
+	return s, nil
 }
 
 func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]string) error {
