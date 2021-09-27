@@ -68,6 +68,46 @@ func subscribeToEvents(c *websocket.Conn) error {
 	return c.WriteMessage(1, []byte("{\"id\":1,\"type\":\"subscribe_events\"}"))
 }
 
+func setTimezone(host, token string) error {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/config", host), nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(res.Body)
+
+	if res.Status != "200 OK" {
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(body))
+	}
+
+	type Config struct {
+		TimeZone string `json:"time_zone"`
+	}
+
+	c := Config{}
+
+	if err := json.Unmarshal(body, &c); err != nil {
+		return err
+	}
+
+	if err := os.Setenv("TZ", c.TimeZone); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ha *HomeAssistant) getEventStream() chan HaEvent {
 	stream := make(chan HaEvent, 1000)
 	go func() {
@@ -151,6 +191,10 @@ func GetInstance() HomeAssistant {
 		}
 
 		if err := subscribeToEvents(connection); err != nil {
+			log.Fatalln(err)
+		}
+
+		if err := setTimezone(apiURL, token); err != nil {
 			log.Fatalln(err)
 		}
 
