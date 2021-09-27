@@ -5,7 +5,19 @@ import (
 )
 
 type Entity struct {
-	Name string
+	Name  string
+	State State
+}
+
+func GetEntity(entityId string) (Entity, error) {
+	state, err := State{EntityId: entityId}.Get()
+	if err != nil {
+		return Entity{}, err
+	}
+	return Entity{
+		Name:  entityId,
+		State: state,
+	}, nil
 }
 
 func (e Entity) OnChange(f func(event Event)) {

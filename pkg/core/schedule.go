@@ -16,7 +16,7 @@ func StartScheduler() {
 	s.StartAsync()
 }
 
-func RunDaily(hour, minute int64, f func()) {
+func RunEveryDay(hour, minute int64, f func()) {
 	sHour := strconv.FormatInt(hour, 10)
 	sMinute := strconv.FormatInt(minute, 10)
 
@@ -25,10 +25,34 @@ func RunDaily(hour, minute int64, f func()) {
 	}
 }
 
-func RunHourly(minute int64, f func()) {
+func RunEveryHour(minute int64, f func()) {
 	sMinute := strconv.FormatInt(minute, 10)
 
 	if _, err := s.Cron(fmt.Sprintf("%s * * * *", sMinute)).Do(f); err != nil {
 		fmt.Println(err)
 	}
+}
+
+func RunEveryMinute(f func()) {
+	if _, err := s.Cron("* * * * *").Do(f); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func RunEveryCron(cron string, f func()) {
+	if _, err := s.Cron(cron).Do(f); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func RunIn(hours, minutes int, f func()) {
+	d, err := time.ParseDuration(fmt.Sprintf("%dh%dm", hours, minutes))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	go func() {
+		time.Sleep(d)
+		f()
+	}()
 }
