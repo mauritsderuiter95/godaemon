@@ -25,6 +25,7 @@ type HomeAssistant struct {
 	events    chan HaEvent
 	done      chan struct{}
 	Callbacks map[string][]func(Event)
+	Hooks     map[string][]func() State
 }
 
 type HaEvent struct {
@@ -162,6 +163,7 @@ func GetInstance() HomeAssistant {
 			wsconn:    connection,
 			done:      make(chan struct{}),
 			Callbacks: map[string][]func(Event){},
+			Hooks:     map[string][]func() State{},
 		}
 
 		ha.events = ha.getEventStream()
@@ -220,9 +222,17 @@ func (ha HomeAssistant) GetState(entity string) (State, error) {
 	return s, nil
 }
 
-func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]string) error {
+func (ha HomeAssistant) CallService(domain, service, entityId string, attrs map[string]interface{}) error {
+	if service == "turn_on" {
+		hooks := ha.Hooks[entityId]
+		for _, hook := range hooks {
+			newState := hook()
+			attrs = newState.Attributes
+		}
+	}
+
 	if attrs == nil {
-		attrs = map[string]string{}
+		attrs = map[string]interface{}{}
 	}
 	attrs["entity_id"] = entityId
 

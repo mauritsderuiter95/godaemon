@@ -5,8 +5,8 @@ import (
 )
 
 type Entity struct {
-	Name  string
-	State State
+	EntityId string
+	State    State
 }
 
 func GetEntity(entityId string) (Entity, error) {
@@ -15,21 +15,21 @@ func GetEntity(entityId string) (Entity, error) {
 		return Entity{}, err
 	}
 	return Entity{
-		Name:  entityId,
-		State: state,
+		EntityId: entityId,
+		State:    state,
 	}, nil
 }
 
 func (e Entity) OnChange(f func(event Event)) {
 	ha := GetInstance()
 
-	ha.Callbacks[e.Name] = append(ha.Callbacks[e.Name], f)
+	ha.Callbacks[e.EntityId] = append(ha.Callbacks[e.EntityId], f)
 }
 
-func (e Entity) TurnOn(attrs map[string]string) {
+func (e Entity) TurnOn(attrs map[string]interface{}) {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "turn_on", e.Name, attrs); err != nil {
+	if err := ha.CallService("light", "turn_on", e.EntityId, attrs); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
@@ -38,7 +38,7 @@ func (e Entity) TurnOn(attrs map[string]string) {
 func (e Entity) TurnOff() {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "turn_off", e.Name, nil); err != nil {
+	if err := ha.CallService("light", "turn_off", e.EntityId, nil); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
@@ -47,8 +47,14 @@ func (e Entity) TurnOff() {
 func (e Entity) Toggle() {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "toggle", e.Name, nil); err != nil {
+	if err := ha.CallService("light", "toggle", e.EntityId, nil); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
+}
+
+func (e Entity) AddHook(f func() State) {
+	ha := GetInstance()
+
+	ha.Hooks[e.EntityId] = append(ha.Hooks[e.EntityId], f)
 }

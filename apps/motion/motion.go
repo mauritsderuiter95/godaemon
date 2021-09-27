@@ -9,12 +9,12 @@ type Motion struct {
 }
 
 func (m Motion) Initialize() {
-	core.Entity{Name: "binary_sensor.motion_sensor_overloop"}.OnChange(m.OnChange)
+	core.Entity{EntityId: "binary_sensor.motion_sensor_overloop"}.OnChange(m.OnChange)
 }
 
 func (m Motion) OnChange(event core.Event) {
 	if event.Data.NewState.State == "on" {
-		core.Entity{Name: "light.bulb_overloop"}.TurnOn(nil)
+		core.Entity{EntityId: "light.bulb_overloop"}.TurnOn(nil)
 		core.RunIn(0, 1, m.CheckMotion)
 	}
 }
@@ -28,6 +28,6 @@ func (m Motion) CheckMotion() {
 	if e.State.State == "on" {
 		core.RunIn(0, 1, m.CheckMotion)
 	} else {
-		core.Entity{Name: "light.bulb_overloop"}.TurnOff()
+		core.Entity{EntityId: "light.bulb_overloop"}.TurnOff()
 	}
 }

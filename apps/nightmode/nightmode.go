@@ -20,9 +20,9 @@ func (n Nightmode) Initialize() {
 }
 
 func (Nightmode) TurnOffLivingRoom() {
-	core.Entity{Name: "light.woonkamer"}.TurnOff()
+	core.Entity{EntityId: "light.woonkamer"}.TurnOff()
 }
 
 func (n Nightmode) ToggleKitchen(event core.Event) {
-	core.Entity{Name: "light.kitchen"}.Toggle()
+	core.Entity{EntityId: "light.kitchen"}.Toggle()
 }
