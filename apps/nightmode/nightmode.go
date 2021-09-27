@@ -15,7 +15,7 @@ func (n Nightmode) Initialize() {
 		return
 	}
 	fmt.Printf("%#v\n", state)
-	core.RunDaily(22, 22, n.TurnOffLivingRoom)
+	core.RunEveryDay(22, 22, n.TurnOffLivingRoom)
 	core.Event{EventType: "deconz_event"}.On("switch_woonkamer", n.ToggleKitchen)
 }
 
