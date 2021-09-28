@@ -1,0 +1,4 @@
+entities:
+  light.bulb_overloop: block
+  light.bulb_badkamer: dim
+  light.bulb_toilet: dim

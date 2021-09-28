@@ -53,8 +53,10 @@ func (e Entity) Toggle() {
 	}
 }
 
-func (e Entity) AddHook(f func() State) {
+func (e Entity) AddHook(f func(e Entity) State) {
 	ha := GetInstance()
 
-	ha.Hooks[e.EntityId] = append(ha.Hooks[e.EntityId], f)
+	ha.Hooks[e.EntityId] = append(ha.Hooks[e.EntityId], func() State {
+		return f(e)
+	})
 }
