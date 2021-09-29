@@ -21,7 +21,11 @@ func (s State) Get() (State, error) {
 func (s State) OnChange(f func(event Event)) {
 	ha := GetInstance()
 
-	ha.Callbacks[s.EntityId] = append(ha.Callbacks[s.EntityId], func(event Event) {
+	if _, ok := ha.Callbacks["all"]; !ok {
+		ha.Callbacks["all"] = map[string][]func(Event){}
+	}
+
+	ha.Callbacks["all"][s.EntityId] = append(ha.Callbacks["all"][s.EntityId], func(event Event) {
 		if event.EventType == s.EntityId {
 			f(event)
 		}

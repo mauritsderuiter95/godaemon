@@ -23,7 +23,11 @@ func GetEntity(entityId string) (Entity, error) {
 func (e Entity) OnChange(f func(event Event)) {
 	ha := GetInstance()
 
-	ha.Callbacks[e.EntityId] = append(ha.Callbacks[e.EntityId], f)
+	if _, ok := ha.Callbacks["all"]; !ok {
+		ha.Callbacks["all"] = map[string][]func(Event){}
+	}
+
+	ha.Callbacks["all"][e.EntityId] = append(ha.Callbacks["all"][e.EntityId], f)
 }
 
 func (e Entity) TurnOn(attrs map[string]interface{}) {

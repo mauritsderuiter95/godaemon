@@ -21,17 +21,17 @@ func (n Nightmode) Initialize() {
 		day := time.Now().Weekday()
 		if day == time.Saturday || day == time.Sunday {
 			core.RunIn(1, 0, func() {
-				n.TurnOffEntities(conf["entities"].([]string))
+				n.TurnOffEntities(conf["entities"].([]interface{}))
 			})
 		} else {
-			n.TurnOffEntities(conf["entities"].([]string))
+			n.TurnOffEntities(conf["entities"].([]interface{}))
 		}
 	})
 }
 
-func (n Nightmode) TurnOffEntities(entities []string) {
+func (n Nightmode) TurnOffEntities(entities []interface{}) {
 	for _, entity := range entities {
-		core.Entity{EntityId: entity}.TurnOff()
+		core.Entity{EntityId: entity.(string)}.TurnOff()
 	}
 }
 

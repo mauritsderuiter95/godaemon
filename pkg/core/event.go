@@ -48,10 +48,28 @@ type Event struct {
 	} `json:"context"`
 }
 
-func (e Event) On(entity string, f func(event Event)) {
+func (e Event) OnTrigger(f func(event Event)) {
 	ha := GetInstance()
 
-	ha.Callbacks[entity] = append(ha.Callbacks[entity], func(event Event) {
+	if _, ok := ha.Callbacks[e.EventType]; !ok {
+		ha.Callbacks[e.EventType] = map[string][]func(Event){}
+	}
+
+	ha.Callbacks[e.EventType]["all"] = append(ha.Callbacks[e.EventType]["all"], func(event Event) {
+		if event.EventType == e.EventType {
+			f(event)
+		}
+	})
+}
+
+func (e Event) OnEntityTrigger(entity string, f func(event Event)) {
+	ha := GetInstance()
+
+	if _, ok := ha.Callbacks[e.EventType]; !ok {
+		ha.Callbacks[e.EventType] = map[string][]func(Event){}
+	}
+
+	ha.Callbacks[e.EventType][entity] = append(ha.Callbacks[e.EventType][entity], func(event Event) {
 		if event.EventType == e.EventType {
 			f(event)
 		}

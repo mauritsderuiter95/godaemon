@@ -24,7 +24,7 @@ type HomeAssistant struct {
 	wsconn    *websocket.Conn
 	events    chan HaEvent
 	done      chan struct{}
-	Callbacks map[string][]func(Event)
+	Callbacks map[string]map[string][]func(Event)
 	Hooks     map[string][]func() State
 }
 
@@ -206,7 +206,7 @@ func GetInstance() HomeAssistant {
 			apiURL:    apiURL,
 			wsconn:    connection,
 			done:      make(chan struct{}),
-			Callbacks: map[string][]func(Event){},
+			Callbacks: map[string]map[string][]func(Event){},
 			Hooks:     map[string][]func() State{},
 		}
 
@@ -218,13 +218,42 @@ func GetInstance() HomeAssistant {
 
 func (ha *HomeAssistant) HandleEvents() {
 	for m := range ha.events {
+		// Get id of trigger or id of changed entity
 		id := m.Event.Data.EntityId
 		if id == "" {
 			id = m.Event.Data.Id
 		}
-		if val, ok := ha.Callbacks[id]; ok {
-			for _, f := range val {
-				go f(m.Event)
+
+		// Run functions which trigger on all events
+		if event, ok := ha.Callbacks["all"]; ok {
+			if val, ok := event["all"]; ok {
+				for _, f := range val {
+					go f(m.Event)
+				}
+			}
+
+			// Run functions which trigger on specified entities
+			if val, ok := event[id]; ok {
+				for _, f := range val {
+					go f(m.Event)
+				}
+			}
+		}
+
+		// Run functions which trigger on specified events
+		if event, ok := ha.Callbacks[m.Event.EventType]; ok {
+			// Run functions which trigger on all events
+			if val, ok := event["all"]; ok {
+				for _, f := range val {
+					go f(m.Event)
+				}
+			}
+
+			// Run functions which trigger on specified entities
+			if val, ok := event[id]; ok {
+				for _, f := range val {
+					go f(m.Event)
+				}
 			}
 		}
 	}
