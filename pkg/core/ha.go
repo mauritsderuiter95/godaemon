@@ -88,7 +88,7 @@ func setTimezone(host, token string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(body))
+		return fmt.Errorf("error connecting to %s: %s", host, string(body))
 	}
 
 	type Config struct {

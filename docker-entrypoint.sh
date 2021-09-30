@@ -6,6 +6,8 @@ mv /data/app/src/* /config/godaemon
 
 cd /config/godaemon
 
+set -e
+
 while true; do
   go build -o ./godaemon-app ./cmd/godaemon/.
   ./godaemon-app
