@@ -2,7 +2,7 @@
 
 rm -rf /config/godaemon/cmd
 rm -rf /config/godaemon/pkg
-mv /data/app/src/* /config/godaemon
+mv /app/src/* /config/godaemon
 
 cd /config/godaemon
 
