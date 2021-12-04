@@ -2,6 +2,7 @@ package core
 
 import (
 	"log"
+	"strings"
 )
 
 type Entity struct {
@@ -33,7 +34,12 @@ func (e Entity) OnChange(f func(event Event)) {
 func (e Entity) TurnOn(attrs map[string]interface{}) {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "turn_on", e.EntityId, attrs); err != nil {
+	platform := "light"
+	if strings.Contains(e.EntityId, ".") {
+		platform = strings.Split(e.EntityId, ".")[0]
+	}
+
+	if err := ha.CallService(platform, "turn_on", e.EntityId, attrs); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
@@ -42,7 +48,12 @@ func (e Entity) TurnOn(attrs map[string]interface{}) {
 func (e Entity) TurnOff() {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "turn_off", e.EntityId, nil); err != nil {
+	platform := "light"
+	if strings.Contains(e.EntityId, ".") {
+		platform = strings.Split(e.EntityId, ".")[0]
+	}
+
+	if err := ha.CallService(platform, "turn_off", e.EntityId, nil); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
@@ -51,7 +62,12 @@ func (e Entity) TurnOff() {
 func (e Entity) Toggle() {
 	ha := GetInstance()
 
-	if err := ha.CallService("light", "toggle", e.EntityId, nil); err != nil {
+	platform := "light"
+	if strings.Contains(e.EntityId, ".") {
+		platform = strings.Split(e.EntityId, ".")[0]
+	}
+
+	if err := ha.CallService(platform, "toggle", e.EntityId, nil); err != nil {
 		logger := log.Default()
 		logger.Println(err)
 	}
